@@ -163,8 +163,10 @@ def compute_on_gpu(X, L, iL, start, end, N, H):
 # Split the data for each GPU
 X_gpu1 = cp.asarray(X[:N//2])
 X_gpu2 = cp.asarray(X[N//2:])
-L_gpu1 = cp.asarray(L[:N//2])
-L_gpu2 = cp.asarray(L[N//2:])
+# L_gpu1 = cp.asarray(L[:N//2])
+# L_gpu2 = cp.asarray(L[N//2:])
+L_gpu1 = L[:N//2]
+L_gpu2 = L[N//2:]
 iL_gpu1 = cp.asarray(iL[:N//2])
 iL_gpu2 = cp.asarray(iL[N//2:])
 
