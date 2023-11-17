@@ -196,18 +196,19 @@ for i in range(N):
 
 # Prepare and Compute Function for each GPU
 def prepare_and_compute_on_gpu(gpu_id, X_full, L_full, iL_full, N, H):
-    with cp.cuda.Device(gpu_id).synchronize():
-        X_gpu = X_full[gpu_id * N//2 : (gpu_id + 1) * N//2]
-        L_gpu = L_full[gpu_id * N//2 : (gpu_id + 1) * N//2]
-        iL_gpu = iL_full[gpu_id * N//2 : (gpu_id + 1) * N//2]
-        H_gpu = cp.zeros((N//2, N), dtype=cp.float32)
+    cp.cuda.Device(gpu_id).use()  # Set the current GPU device
+    X_gpu = X_full[gpu_id * N//2 : (gpu_id + 1) * N//2]
+    L_gpu = L_full[gpu_id * N//2 : (gpu_id + 1) * N//2]
+    iL_gpu = iL_full[gpu_id * N//2 : (gpu_id + 1) * N//2]
+    H_gpu = cp.zeros((N//2, N), dtype=cp.float32)
 
-        for i in range(N//2):
-            for j in range(N):
-                H_gpu[i, j] = xz(X_gpu[i], X_full[j], L_gpu[i], L_full[j], iL_gpu[i], iL_full[j])
+    for i in range(N//2):
+        for j in range(N):
+            H_gpu[i, j] = xz(X_gpu[i], X_full[j], L_gpu[i], L_full[j], iL_gpu[i], iL_full[j])
 
-        H_cpu = cp.asnumpy(H_gpu)
-        H[gpu_id * N//2 : (gpu_id + 1) * N//2, :] = H_cpu
+    H_cpu = cp.asnumpy(H_gpu)
+    H[gpu_id * N//2 : (gpu_id + 1) * N//2, :] = H_cpu
+    cp.cuda.get_current_stream().synchronize()  # Synchronize operations on this GPU
 
 # Initialize H matrix
 H = np.zeros((N, N), dtype=np.float32)
