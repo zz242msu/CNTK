@@ -196,8 +196,8 @@ for i in range(N):
 
 # Prepare and Compute Function for each GPU
 def prepare_and_compute_on_gpu(gpu_id, X_full, L_full, iL_full, N, H):
-    cp.cuda.Device(gpu_id).synchronize():
-        X_gpu = X_full[gpu_id * N//2 : (gpu_id + 1) * N//2]
+    with cp.cuda.Device(gpu_id).synchronize():
+	X_gpu = X_full[gpu_id * N//2 : (gpu_id + 1) * N//2]
         L_gpu = L_full[gpu_id * N//2 : (gpu_id + 1) * N//2]
         iL_gpu = iL_full[gpu_id * N//2 : (gpu_id + 1) * N//2]
         H_gpu = cp.zeros((N//2, N), dtype=cp.float32)
