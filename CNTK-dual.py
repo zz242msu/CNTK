@@ -155,36 +155,39 @@ for i in range(N):
 # print('H', H)
 #####
 
-# Assuming X, L, iL are data arrays
-X_gpu1 = cp.asarray(X[:N//2])  # First half to GPU 1
-X_gpu2 = cp.asarray(X[N//2:])  # Second half to GPU 2
+def compute_on_gpu(X, L, iL, start, end, N, H):
+    for i in range(start, end):
+        for j in range(N):
+            H[i - start, j] = xz(X[i], X[j], L[i], L[j], iL[i], iL[j])
 
-# Allocate memory for results on each GPU
+# Split the data for each GPU
+X_gpu1 = cp.asarray(X[:N//2])
+X_gpu2 = cp.asarray(X[N//2:])
+L_gpu1 = cp.asarray(L[:N//2])
+L_gpu2 = cp.asarray(L[N//2:])
+iL_gpu1 = cp.asarray(iL[:N//2])
+iL_gpu2 = cp.asarray(iL[N//2:])
+
+# Allocate memory for partial results on each GPU
 H_gpu1 = cp.zeros((N//2, N), dtype=cp.float32)
 H_gpu2 = cp.zeros((N//2, N), dtype=cp.float32)
 
-# Define a function that can be run in parallel
-def compute_on_gpu(X, L, iL, H, start, end):
-    for i in range(start, end):
-        for j in range(N):
-            H[i - start][j] = xz(X[i], X[j], L[i], L[j], iL[i], iL[j])
+# Use separate threads or processes to run on each GPU
+import threading
 
-# Run on GPU 1
-print('gpu 1')
-with cp.cuda.Device(0):
-    compute_on_gpu(X_gpu1, L_gpu1, iL_gpu1, H_gpu1, 0, N//2)
+thread1 = threading.Thread(target=compute_on_gpu, args=(X_gpu1, L_gpu1, iL_gpu1, 0, N//2, N, H_gpu1))
+thread2 = threading.Thread(target=compute_on_gpu, args=(X_gpu2, L_gpu2, iL_gpu2, N//2, N, N, H_gpu2))
 
-print('gpu 2')
-# Run on GPU 2
-with cp.cuda.Device(1):
-    compute_on_gpu(X_gpu2, L_gpu2, iL_gpu2, H_gpu2, N//2, N)
+thread1.start()
+thread2.start()
 
-print('to cpu')
+thread1.join()
+thread2.join()
+
 # Transfer results back to CPU and combine
 H_cpu1 = cp.asnumpy(H_gpu1)
 H_cpu2 = cp.asnumpy(H_gpu2)
 H = np.vstack((H_cpu1, H_cpu2))
-print('H', H)
 
 #Solve kernel regression.
 print('solving kr')
