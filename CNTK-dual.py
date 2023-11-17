@@ -3,6 +3,7 @@ import numpy as np
 import argparse
 import scipy.linalg
 from utils import load_cifar
+import threading 
 
 print("CNTK!")
 parser = argparse.ArgumentParser(description = 'Convolutional Neural Tangent Kernel (CNTK) for CIFAR-10')
@@ -196,6 +197,7 @@ for i in range(N):
 # Prepare and Compute Function for each GPU
 def prepare_and_compute_on_gpu(gpu_id, X_full, L_full, iL_full, N, H):
     with cp.cuda.Device(gpu_id):
+	print('gpu', gpu_id)
         X_gpu = X_full[gpu_id * N//2 : (gpu_id + 1) * N//2]
         L_gpu = L_full[gpu_id * N//2 : (gpu_id + 1) * N//2]
         iL_gpu = iL_full[gpu_id * N//2 : (gpu_id + 1) * N//2]
@@ -212,6 +214,7 @@ def prepare_and_compute_on_gpu(gpu_id, X_full, L_full, iL_full, N, H):
 H = np.zeros((N, N), dtype=np.float32)
 
 # Start Threads for each GPU
+print('threading')
 threads = []
 for gpu_id in range(2):
     thread = threading.Thread(target=prepare_and_compute_on_gpu, args=(gpu_id, X, L, iL, N, H))
