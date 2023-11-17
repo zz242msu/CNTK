@@ -155,44 +155,73 @@ for i in range(N):
 # print('H', H)
 #####
 
-def compute_on_gpu(X, L, iL, start, end, N, H):
-    for i in range(start, end):
-        for j in range(N):
-            H[i - start, j] = xz(X[i], X[j], L[i], L[j], iL[i], iL[j])
+# def compute_on_gpu(X, L, iL, start, end, N, H):
+#     for i in range(start, end):
+#         for j in range(N):
+#             H[i - start, j] = xz(X[i], X[j], L[i], L[j], iL[i], iL[j])
 
-# Split the data for each GPU
-X_gpu1 = cp.asarray(X[:N//2])
-X_gpu2 = cp.asarray(X[N//2:])
-# L_gpu1 = cp.asarray(L[:N//2])
-# L_gpu2 = cp.asarray(L[N//2:])
-L_gpu1 = L[:N//2]
-L_gpu2 = L[N//2:]
-# iL_gpu1 = cp.asarray(iL[:N//2])
-# iL_gpu2 = cp.asarray(iL[N//2:])
-iL_gpu1 = iL[:N//2]
-iL_gpu2 = iL[N//2:]
+# # Split the data for each GPU
+# X_gpu1 = cp.asarray(X[:N//2])
+# X_gpu2 = cp.asarray(X[N//2:])
+# # L_gpu1 = cp.asarray(L[:N//2])
+# # L_gpu2 = cp.asarray(L[N//2:])
+# L_gpu1 = L[:N//2]
+# L_gpu2 = L[N//2:]
+# # iL_gpu1 = cp.asarray(iL[:N//2])
+# # iL_gpu2 = cp.asarray(iL[N//2:])
+# iL_gpu1 = iL[:N//2]
+# iL_gpu2 = iL[N//2:]
 
-# Allocate memory for partial results on each GPU
-H_gpu1 = cp.zeros((N//2, N), dtype=cp.float32)
-H_gpu2 = cp.zeros((N//2, N), dtype=cp.float32)
+# # Allocate memory for partial results on each GPU
+# H_gpu1 = cp.zeros((N//2, N), dtype=cp.float32)
+# H_gpu2 = cp.zeros((N//2, N), dtype=cp.float32)
 
-# Use separate threads or processes to run on each GPU
-import threading
+# # Use separate threads or processes to run on each GPU
+# import threading
 
-thread1 = threading.Thread(target=compute_on_gpu, args=(X_gpu1, L_gpu1, iL_gpu1, 0, N//2, N, H_gpu1))
-thread2 = threading.Thread(target=compute_on_gpu, args=(X_gpu2, L_gpu2, iL_gpu2, N//2, N, N, H_gpu2))
+# thread1 = threading.Thread(target=compute_on_gpu, args=(X_gpu1, L_gpu1, iL_gpu1, 0, N//2, N, H_gpu1))
+# thread2 = threading.Thread(target=compute_on_gpu, args=(X_gpu2, L_gpu2, iL_gpu2, N//2, N, N, H_gpu2))
 
-thread1.start()
-thread2.start()
+# thread1.start()
+# thread2.start()
 
-thread1.join()
-thread2.join()
+# thread1.join()
+# thread2.join()
 
-# Transfer results back to CPU and combine
-H_cpu1 = cp.asnumpy(H_gpu1)
-H_cpu2 = cp.asnumpy(H_gpu2)
-H = np.vstack((H_cpu1, H_cpu2))
+# # Transfer results back to CPU and combine
+# H_cpu1 = cp.asnumpy(H_gpu1)
+# H_cpu2 = cp.asnumpy(H_gpu2)
+# H = np.vstack((H_cpu1, H_cpu2))
 
+# Prepare and Compute Function for each GPU
+def prepare_and_compute_on_gpu(gpu_id, X_full, L_full, iL_full, N, H):
+    with cp.cuda.Device(gpu_id):
+        X_gpu = X_full[gpu_id * N//2 : (gpu_id + 1) * N//2]
+        L_gpu = L_full[gpu_id * N//2 : (gpu_id + 1) * N//2]
+        iL_gpu = iL_full[gpu_id * N//2 : (gpu_id + 1) * N//2]
+        H_gpu = cp.zeros((N//2, N), dtype=cp.float32)
+
+        for i in range(N//2):
+            for j in range(N):
+                H_gpu[i, j] = xz(X_gpu[i], X_full[j], L_gpu[i], L_full[j], iL_gpu[i], iL_full[j])
+
+        H_cpu = cp.asnumpy(H_gpu)
+        H[gpu_id * N//2 : (gpu_id + 1) * N//2, :] = H_cpu
+
+# Initialize H matrix
+H = np.zeros((N, N), dtype=np.float32)
+
+# Start Threads for each GPU
+threads = []
+for gpu_id in range(2):
+    thread = threading.Thread(target=prepare_and_compute_on_gpu, args=(gpu_id, X, L, iL, N, H))
+    thread.start()
+    threads.append(thread)
+
+# Wait for Threads to Complete
+for thread in threads:
+    thread.join()
+	
 #Solve kernel regression.
 print('solving kr')
 Y_train = np.ones((N_train, 10)) * -0.1
