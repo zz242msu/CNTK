@@ -150,6 +150,17 @@ for i in range(N):
 
 #Solve kernel regression.
 Y_train = np.ones((N_train, 10)) * -0.1
+
+# Save the kernel matrix
+np.save('kernel_matrix.npy', H)
+# Save the labels
+np.save('labels.npy', Y_train)
+
+# Load the kernel matrix
+H = np.load('kernel_matrix.npy')
+# Load the labels
+Y_train = np.load('labels.npy')
+
 for i in range(N_train):
 	Y_train[i][y_train[i]] = 0.9
 u = H[N_train:, :N_train].dot(scipy.linalg.solve(H[:N_train, :N_train], Y_train))
