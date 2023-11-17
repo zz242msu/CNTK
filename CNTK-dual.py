@@ -145,8 +145,7 @@ for i in range(N):
 #####Calculate kernel values.
 # #####Below we provide a naive implementation using for-loops.
 # #####Parallelize this part according to your specific computing enviroment to utilize multiple GPUs.
-# H = np.zeros((N, N), dtype = np.float32)
-# print('N', N)
+
 # H = np.zeros((N, N), dtype = np.float32)
 # print('N', N)
 # for i in range(N):
