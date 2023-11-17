@@ -167,8 +167,10 @@ X_gpu2 = cp.asarray(X[N//2:])
 # L_gpu2 = cp.asarray(L[N//2:])
 L_gpu1 = L[:N//2]
 L_gpu2 = L[N//2:]
-iL_gpu1 = cp.asarray(iL[:N//2])
-iL_gpu2 = cp.asarray(iL[N//2:])
+# iL_gpu1 = cp.asarray(iL[:N//2])
+# iL_gpu2 = cp.asarray(iL[N//2:])
+iL_gpu1 = iL[:N//2]
+iL_gpu2 = iL[N//2:]
 
 # Allocate memory for partial results on each GPU
 H_gpu1 = cp.zeros((N//2, N), dtype=cp.float32)
