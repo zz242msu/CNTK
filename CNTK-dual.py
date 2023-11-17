@@ -4,6 +4,7 @@ import argparse
 import scipy.linalg
 from utils import load_cifar
 
+print("CNTK!")
 parser = argparse.ArgumentParser(description = 'Convolutional Neural Tangent Kernel (CNTK) for CIFAR-10')
 parser.add_argument('--depth', default = 21, type = int, help = 'depth of CNTK (#conv layers + 1)')
 parser.add_argument('--gap', default = "yes", type = str, help = 'whether GAP (global average pooling) is used')
@@ -15,6 +16,7 @@ gap = (args.gap == "yes")
 fix = (args.fix == "yes")
 
 #CUDA kernel for convolution operation
+print('conv3')
 conv3 = cp.RawKernel(r'''
 extern "C" __global__
 void conv3(const float s[32][32][32][32], float t[32][32][32][32])
@@ -51,6 +53,7 @@ conv_blocks = (63, 63)
 conv_threads = (32, 32)
 
 #CUDA kernel for activation
+print('trans')
 trans = cp.RawKernel(r'''
 extern "C" __global__
 void trans(float s[32][32][32][32], float t[32][32][32][32], const float l[32][32], const float r[32][32], const float il[32][32], const float ir[32][32])
@@ -122,6 +125,7 @@ def xz(x, z, Lx, Lz, iLx, iLz):
 	return cp.mean(T) if gap else cp.trace(T.reshape(1024, 1024))
 
 #Load CIFAR-10.
+print('load data')
 (X_train, y_train), (X_test, y_test) = load_cifar()
 X = np.concatenate((X_train, X_test), axis = 0)
 N = X.shape[0]
@@ -132,18 +136,24 @@ X = cp.asarray(X).reshape(-1, 3, 1024)
 #Calculate diagonal entries.
 L = []
 iL = []
+print('N', N)
 for i in range(N):
 	Lx, iLx = xx(X[i])	
 	L.append(Lx)
 	iL.append(iLx)
 
 #####Calculate kernel values.
-#####Below we provide a naive implementation using for-loops.
-#####Parallelize this part according to your specific computing enviroment to utilize multiple GPUs.
-H = np.zeros((N, N), dtype = np.float32)
-for i in range(N):
-	for j in range(N):
-		H[i][j] = xz(X[i], X[j], L[i], L[j], iL[i], iL[j])
+# #####Below we provide a naive implementation using for-loops.
+# #####Parallelize this part according to your specific computing enviroment to utilize multiple GPUs.
+# H = np.zeros((N, N), dtype = np.float32)
+# print('N', N)
+# H = np.zeros((N, N), dtype = np.float32)
+# print('N', N)
+# for i in range(N):
+# 	for j in range(N):
+# 		H[i][j] = xz(X[i], X[j], L[i], L[j], iL[i], iL[j])
+
+# print('H', H)
 #####
 
 # Assuming X, L, iL are data arrays
