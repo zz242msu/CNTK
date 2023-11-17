@@ -143,6 +143,8 @@ for i in range(N):
 H = np.zeros((N, N), dtype = np.float32)
 for i in range(N):
 	for j in range(N):
+		print('i', i)
+		print('j',j)
 		H[i][j] = xz(X[i], X[j], L[i], L[j], iL[i], iL[j])
 #####
 
