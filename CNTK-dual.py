@@ -171,19 +171,24 @@ def compute_on_gpu(X, L, iL, H, start, end):
             H[i - start][j] = xz(X[i], X[j], L[i], L[j], iL[i], iL[j])
 
 # Run on GPU 1
+print('gpu 1')
 with cp.cuda.Device(0):
     compute_on_gpu(X_gpu1, L_gpu1, iL_gpu1, H_gpu1, 0, N//2)
 
+print('gpu 2')
 # Run on GPU 2
 with cp.cuda.Device(1):
     compute_on_gpu(X_gpu2, L_gpu2, iL_gpu2, H_gpu2, N//2, N)
 
+print('to cpu')
 # Transfer results back to CPU and combine
 H_cpu1 = cp.asnumpy(H_gpu1)
 H_cpu2 = cp.asnumpy(H_gpu2)
-H_combined = np.vstack((H_cpu1, H_cpu2))
+H = np.vstack((H_cpu1, H_cpu2))
+print('H', H)
 
 #Solve kernel regression.
+print('solving kr')
 Y_train = np.ones((N_train, 10)) * -0.1
 for i in range(N_train):
 	Y_train[i][y_train[i]] = 0.9
